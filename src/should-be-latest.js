@@ -1,7 +1,7 @@
 const { getPackageVersionByTag } = require('./npm-utils');
 const { parseVersion } = require('./version-utils');
 
-function shouldBeLatest(version) {
+function shouldBeLatest(packageName, version) {
   const [newMajor, newMinor, newPatch, newPreRelease] = parseVersion(version);
 
   // Pre-releases should never be latest
@@ -9,7 +9,7 @@ function shouldBeLatest(version) {
     return false;
   }
 
-  const latestVersion = getPackageVersionByTag('react-native-gesture-handler', 'latest');
+  const latestVersion = getPackageVersionByTag(packageName, 'latest');
   const [major, minor, patch] = parseVersion(latestVersion);
 
   return (newMajor === major && newMinor === minor && newPatch >= patch + 1) ||
@@ -18,8 +18,9 @@ function shouldBeLatest(version) {
 }
 
 if (require.main === module) {
-  const version = process.argv[2];
-  console.log(shouldBeLatest(version));
+  const packageName = process.argv[2];
+  const version = process.argv[3];
+  console.log(shouldBeLatest(packageName, version));
 }
 
 module.exports = {

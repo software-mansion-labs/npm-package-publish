@@ -17,10 +17,10 @@ describe('validate-non-latest-version', () => {
         throw new Error('Not found');
       });
 
-      const result = validateNonLatestVersion('2.30.0');
+      const result = validateNonLatestVersion('package-name', '2.30.0');
 
       expect(result).toBe(true);
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', '2.30.0');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', '2.30.0');
     });
 
     test('returns true when base version of rc does not exist', () => {
@@ -28,10 +28,10 @@ describe('validate-non-latest-version', () => {
         throw new Error('Not found');
       });
 
-      const result = validateNonLatestVersion('2.30.0-rc.1');
+      const result = validateNonLatestVersion('package-name', '2.30.0-rc.1');
 
       expect(result).toBe(true);
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', '2.30.0');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', '2.30.0');
     });
 
     test('returns true when base version of beta does not exist', () => {
@@ -39,10 +39,10 @@ describe('validate-non-latest-version', () => {
         throw new Error('Not found');
       });
 
-      const result = validateNonLatestVersion('2.30.0-beta.1');
+      const result = validateNonLatestVersion('package-name', '2.30.0-beta.1');
 
       expect(result).toBe(true);
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', '2.30.0');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', '2.30.0');
     });
 
     test('returns true when base version of nightly does not exist', () => {
@@ -50,17 +50,17 @@ describe('validate-non-latest-version', () => {
         throw new Error('Not found');
       });
 
-      const result = validateNonLatestVersion('2.30.0-nightly-20260129-abc123def');
+      const result = validateNonLatestVersion('package-name', '2.30.0-nightly-20260129-abc123def');
 
       expect(result).toBe(true);
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', '2.30.0');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', '2.30.0');
     });
 
     // Invalid cases - version already exists
     test('throws error when stable version already exists', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
-      expect(() => validateNonLatestVersion('2.30.0')).toThrow(
+      expect(() => validateNonLatestVersion('package-name', '2.30.0')).toThrow(
         'Version 2.30.0 already exists in the npm registry'
       );
     });
@@ -68,7 +68,7 @@ describe('validate-non-latest-version', () => {
     test('throws error when base version of rc already exists', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
-      expect(() => validateNonLatestVersion('2.30.0-rc.1')).toThrow(
+      expect(() => validateNonLatestVersion('package-name', '2.30.0-rc.1')).toThrow(
         'Version 2.30.0 already exists in the npm registry'
       );
     });
@@ -76,7 +76,7 @@ describe('validate-non-latest-version', () => {
     test('throws error when base version of beta already exists', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
-      expect(() => validateNonLatestVersion('2.30.0-beta.5')).toThrow(
+      expect(() => validateNonLatestVersion('package-name', '2.30.0-beta.5')).toThrow(
         'Version 2.30.0 already exists in the npm registry'
       );
     });
@@ -84,7 +84,7 @@ describe('validate-non-latest-version', () => {
     test('throws error when base version of nightly already exists', () => {
       getPackageVersionByTag.mockReturnValue('2.30.0');
 
-      expect(() => validateNonLatestVersion('2.30.0-nightly-20260129-abc123def')).toThrow(
+      expect(() => validateNonLatestVersion('package-name', '2.30.0-nightly-20260129-abc123def')).toThrow(
         'Version 2.30.0 already exists in the npm registry'
       );
     });
@@ -95,9 +95,9 @@ describe('validate-non-latest-version', () => {
         throw new Error('Not found');
       });
 
-      validateNonLatestVersion('2.30.5-rc.1');
+      validateNonLatestVersion('package-name', '2.30.5-rc.1');
 
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', '2.30.5');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', '2.30.5');
     });
 
     test('checks correct base version for different minor numbers', () => {
@@ -105,9 +105,9 @@ describe('validate-non-latest-version', () => {
         throw new Error('Not found');
       });
 
-      validateNonLatestVersion('2.45.0-beta.2');
+      validateNonLatestVersion('package-name', '2.45.0-beta.2');
 
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', '2.45.0');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', '2.45.0');
     });
   });
 });

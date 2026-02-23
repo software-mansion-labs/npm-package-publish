@@ -3,7 +3,7 @@ const { getStableBranchVersion, getLatestVersion, getNextPreReleaseVersion, getN
 const { ReleaseType } = require('./parse-arguments');
 const { getPackageVersionByTag } = require('./npm-utils');
 
-function getVersion(releaseType, versionHint = null) {
+function getVersion(packageName, releaseType, versionHint = null) {
   if (releaseType === ReleaseType.NIGHTLY) {
     let [major, minor] = getLatestVersion();
 
@@ -17,7 +17,7 @@ function getVersion(releaseType, versionHint = null) {
 
     const currentSHA = execSync('git rev-parse HEAD').toString().trim().slice(0, 9);
 
-    const latestNightlyVersion = getPackageVersionByTag('react-native-gesture-handler', 'nightly');
+    const latestNightlyVersion = getPackageVersionByTag(packageName, 'nightly');
     const latestNightlySHA = latestNightlyVersion.split('-').pop();
 
     // Don't publish the same commit twice
@@ -40,10 +40,10 @@ function getVersion(releaseType, versionHint = null) {
       versionToUse = getStableBranchVersion().slice(0, 2).join('.') + '.0';
     }
 
-    return getNextPreReleaseVersion(releaseType, versionToUse);
+    return getNextPreReleaseVersion(packageName, releaseType, versionToUse);
   }
 
-  const [major, minor, patch] = versionHint ? parseVersion(versionHint) : getNextStableVersion();
+  const [major, minor, patch] = versionHint ? parseVersion(versionHint) : getNextStableVersion(packageName);
   return `${major}.${minor}.${patch}`;
 }
 

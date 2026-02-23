@@ -16,129 +16,220 @@ describe('parse-arguments', () => {
     // Default behavior (stable release)
     test('returns stable release type with no arguments', () => {
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: null });
+      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: null, packageName: null, packageJsonPath: null });
     });
 
     test('returns stable release type with --version flag', () => {
       process.argv = ['node', 'script.js', '--version', '2.22.0'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: '2.22.0' });
+      expect(result).toEqual({ releaseType: ReleaseType.STABLE, version: '2.22.0', packageName: null, packageJsonPath: null });
     });
 
     // Single flag tests
     test('returns nightly release type with --nightly flag', () => {
       process.argv = ['node', 'script.js', '--nightly'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: null });
+      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: null, packageName: null, packageJsonPath: null });
     });
 
     test('returns beta release type with --beta flag', () => {
       process.argv = ['node', 'script.js', '--beta'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: null });
+      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: null, packageName: null, packageJsonPath: null });
     });
 
     test('returns rc release type with --rc flag', () => {
       process.argv = ['node', 'script.js', '--rc'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: null });
+      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: null, packageName: null, packageJsonPath: null });
     });
 
     // Version with pre-release flags
     test('returns beta with version when both provided', () => {
       process.argv = ['node', 'script.js', '--beta', '--version', '2.22.0'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: '2.22.0' });
+      expect(result).toEqual({ releaseType: ReleaseType.BETA, version: '2.22.0', packageName: null, packageJsonPath: null });
     });
 
     test('returns rc with version when both provided', () => {
       process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0' });
+      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0', packageName: null, packageJsonPath: null });
     });
 
     test('handles version flag before release type flag', () => {
       process.argv = ['node', 'script.js', '--version', '2.22.0', '--rc'];
       const result = parseArguments();
-      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0' });
+      expect(result).toEqual({ releaseType: ReleaseType.RELEASE_CANDIDATE, version: '2.22.0', packageName: null, packageJsonPath: null });
     });
 
     // Mutual exclusivity tests
     test('throws error when --nightly and --beta are both provided', () => {
-      process.argv = ['node', 'script.js', '--nightly', '--beta'];
+      process.argv = ['node', 'script.js', '--nightly', '--beta', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Release flags --nightly, --beta, and --rc are mutually exclusive');
     });
 
     test('throws error when --nightly and --rc are both provided', () => {
-      process.argv = ['node', 'script.js', '--nightly', '--rc'];
+      process.argv = ['node', 'script.js', '--nightly', '--rc', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Release flags --nightly, --beta, and --rc are mutually exclusive');
     });
 
     test('throws error when --beta and --rc are both provided', () => {
-      process.argv = ['node', 'script.js', '--beta', '--rc'];
+      process.argv = ['node', 'script.js', '--beta', '--rc', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Release flags --nightly, --beta, and --rc are mutually exclusive');
     });
 
     test('throws error when all three flags are provided', () => {
-      process.argv = ['node', 'script.js', '--nightly', '--beta', '--rc'];
+      process.argv = ['node', 'script.js', '--nightly', '--beta', '--rc', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Release flags --nightly, --beta, and --rc are mutually exclusive');
     });
 
     // Version not allowed for nightly
     test('throws error when version provided for nightly release', () => {
-      process.argv = ['node', 'script.js', '--nightly', '--version', '2.22.0'];
+      process.argv = ['node', 'script.js', '--nightly', '--version', '2.22.0', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow();
     });
 
     // Version format validation
     test('throws error for invalid version format - missing patch', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '2.22', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Provided version "2.22" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - letters', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.a'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.a', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Provided version "2.22.a" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - extra parts', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0.1'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0.1', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Provided version "2.22.0.1" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - pre-release suffix', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0-rc.1'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '2.22.0-rc.1', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Provided version "2.22.0-rc.1" is not valid. Expected format: x.y.z');
     });
 
     test('throws error for invalid version format - empty string', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', ''];
+      process.argv = ['node', 'script.js', '--rc', '--version', '', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow('Provided version "" is not valid. Expected format: x.y.z');
     });
 
     // Missing version value
     test('throws error when --version is last argument without value', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version'];
+      process.argv = ['node', 'script.js', '--rc', '--package-name', 'package-name', '--version'];
       expect(() => parseArguments()).toThrow('Expected a version after --version');
     });
 
     // Valid version formats
     test('accepts version with single digit numbers', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3', '--package-name', 'package-name'];
       const result = parseArguments();
       expect(result.version).toBe('1.2.3');
     });
 
     test('accepts version with large numbers', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '10.100.1000'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '10.100.1000', '--package-name', 'package-name'];
       const result = parseArguments();
       expect(result.version).toBe('10.100.1000');
     });
 
     test('accepts version with zeros', () => {
-      process.argv = ['node', 'script.js', '--rc', '--version', '0.0.0'];
+      process.argv = ['node', 'script.js', '--rc', '--version', '0.0.0', '--package-name', 'package-name'];
       const result = parseArguments();
       expect(result.version).toBe('0.0.0');
+    });
+  });
+
+  describe('--package-name argument', () => {
+    test('parses --package-name value', () => {
+      process.argv = ['node', 'script.js', '--package-name', 'my-package'];
+      const result = parseArguments();
+      expect(result.packageName).toBe('my-package');
+    });
+
+    test('packageName is null when --package-name is not provided', () => {
+      const result = parseArguments();
+      expect(result.packageName).toBeNull();
+    });
+
+    test('parses --package-name alongside release type and version flags', () => {
+      process.argv = ['node', 'script.js', '--rc', '--version', '1.2.3', '--package-name', 'my-package'];
+      const result = parseArguments();
+      expect(result).toEqual({
+        releaseType: ReleaseType.RELEASE_CANDIDATE,
+        version: '1.2.3',
+        packageName: 'my-package',
+        packageJsonPath: null,
+      });
+    });
+
+    test('throws error when --package-name is last argument without value', () => {
+      process.argv = ['node', 'script.js', '--package-name'];
+      expect(() => parseArguments()).toThrow('Expected a package name after --package-name');
+    });
+  });
+
+  describe('--package-json-path argument', () => {
+    test('parses --package-json-path value', () => {
+      process.argv = ['node', 'script.js', '--package-json-path', './packages/my-package/package.json'];
+      const result = parseArguments();
+      expect(result.packageJsonPath).toBe('./packages/my-package/package.json');
+    });
+
+    test('packageJsonPath is null when --package-json-path is not provided', () => {
+      const result = parseArguments();
+      expect(result.packageJsonPath).toBeNull();
+    });
+
+    test('parses --package-json-path alongside release type and version flags', () => {
+      process.argv = ['node', 'script.js', '--beta', '--version', '1.2.3', '--package-json-path', './package.json'];
+      const result = parseArguments();
+      expect(result).toEqual({
+        releaseType: ReleaseType.BETA,
+        version: '1.2.3',
+        packageName: null,
+        packageJsonPath: './package.json',
+      });
+    });
+
+    test('throws error when --package-json-path is last argument without value', () => {
+      process.argv = ['node', 'script.js', '--package-json-path'];
+      expect(() => parseArguments()).toThrow('Expected a package JSON path after --package-json-path');
+    });
+  });
+
+  describe('--package-name and --package-json-path combined', () => {
+    test('parses both --package-name and --package-json-path together', () => {
+      process.argv = [
+        'node', 'script.js',
+        '--package-name', 'my-package',
+        '--package-json-path', './packages/my-package/package.json',
+      ];
+      const result = parseArguments();
+      expect(result).toEqual({
+        releaseType: ReleaseType.STABLE,
+        version: null,
+        packageName: 'my-package',
+        packageJsonPath: './packages/my-package/package.json',
+      });
+    });
+
+    test('parses both alongside all other flags', () => {
+      process.argv = [
+        'node', 'script.js',
+        '--rc', '--version', '3.0.0',
+        '--package-name', 'my-package',
+        '--package-json-path', './packages/my-package/package.json',
+      ];
+      const result = parseArguments();
+      expect(result).toEqual({
+        releaseType: ReleaseType.RELEASE_CANDIDATE,
+        version: '3.0.0',
+        packageName: 'my-package',
+        packageJsonPath: './packages/my-package/package.json',
+      });
     });
   });
 

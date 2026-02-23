@@ -12,6 +12,8 @@ function parseArguments() {
   let isNightly = false;
   let isBeta = false;
   let isReleaseCandidate = false;
+  let packageName = null;
+  let packageJsonPath = null;
 
   for (let i = 2; i < process.argv.length; i++) {
     const arg = process.argv[i];
@@ -27,6 +29,20 @@ function parseArguments() {
         i++;
       } else {
         throw new Error('Expected a version after --version');
+      }
+    } else if (arg === '--package-name') {
+      if (i + 1 < process.argv.length) {
+        packageName = process.argv[i + 1];
+        i++;
+      } else {
+        throw new Error('Expected a package name after --package-name');
+      }
+    } else if (arg === '--package-json-path') {
+      if (i + 1 < process.argv.length) {
+        packageJsonPath = process.argv[i + 1];
+        i++;
+      } else {
+        throw new Error('Expected a package JSON path after --package-json-path');
       }
     }
   }
@@ -49,7 +65,7 @@ function parseArguments() {
     }
   }
 
-  return { releaseType, version };
+  return { releaseType, version, packageName, packageJsonPath };
 }
 
 module.exports = {

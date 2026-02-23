@@ -23,8 +23,8 @@ function getStableBranchVersion() {
   }
 }
 
-function getLatestVersion() {
-  const latestVersion = getPackageVersionByTag('react-native-gesture-handler', 'latest');
+function getLatestVersion(packageName) {
+  const latestVersion = getPackageVersionByTag(packageName, 'latest');
   
   try {
     return parseVersion(latestVersion);
@@ -33,7 +33,7 @@ function getLatestVersion() {
   }
 }
 
-function getNextStableVersion() {
+function getNextStableVersion(packageName) {
   const [major, minor] = getStableBranchVersion();
 
   let nextPatch = 0;
@@ -42,7 +42,7 @@ function getNextStableVersion() {
     
     try {
       // if the version is already published, increment the patch version and try again
-      getPackageVersionByTag('react-native-gesture-handler', version);
+      getPackageVersionByTag(packageName, version);
       nextPatch++;
     } catch (error) {
       return [Number(major), Number(minor), nextPatch];
@@ -50,14 +50,14 @@ function getNextStableVersion() {
   }
 }
 
-function getNextPreReleaseVersion(releaseType, version) {
+function getNextPreReleaseVersion(packageName, releaseType, version) {
   let dotIndex = 1;
   while (true) {
     const targetVersion = `${version}-${releaseType}.${dotIndex}`;
     
     try {
       // if the version is already published, increment the pre-release sequence (rc/beta number) and try again
-      getPackageVersionByTag('react-native-gesture-handler', targetVersion);
+      getPackageVersionByTag(packageName, targetVersion);
       dotIndex++;
     } catch (error) {
       return targetVersion;

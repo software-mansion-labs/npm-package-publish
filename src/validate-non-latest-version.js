@@ -1,19 +1,19 @@
 const { getPackageVersionByTag } = require('./npm-utils');
 const { parseVersion } = require('./version-utils');
 
-function versionExists(version) {
+function versionExists(packageName, version) {
   try {
-    getPackageVersionByTag('react-native-gesture-handler', version);
+    getPackageVersionByTag(packageName, version);
     return true;
   } catch (error) {
     return false;
   }
 }
 
-function validateNonLatestVersion(version) {
+function validateNonLatestVersion(packageName, version) {
   const [newMajor, newMinor, newPatch, _] = parseVersion(version);
   
-  if (versionExists(`${newMajor}.${newMinor}.${newPatch}`)) {
+  if (versionExists(packageName, `${newMajor}.${newMinor}.${newPatch}`)) {
     throw new Error(`Version ${newMajor}.${newMinor}.${newPatch} already exists in the npm registry`);
   }
 
@@ -21,8 +21,9 @@ function validateNonLatestVersion(version) {
 }
 
 if (require.main === module) {
-  const version = process.argv[2];
-  console.log(validateNonLatestVersion(version));
+  const packageName = process.argv[2];
+  const version = process.argv[3];
+  console.log(validateNonLatestVersion(packageName, version));
 }
 
 module.exports = {

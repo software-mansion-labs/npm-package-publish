@@ -1,9 +1,9 @@
 const { getPackageVersionByTag } = require('./npm-utils');
 const { parseVersion } = require('./version-utils');
 
-function validateLatestVersion(version) {
+function validateLatestVersion(packageName, version) {
   const [newMajor, newMinor, newPatch, newPreRelease] = parseVersion(version);
-  const latestVersion = getPackageVersionByTag('react-native-gesture-handler', 'latest');
+  const latestVersion = getPackageVersionByTag(packageName, 'latest');
   const [major, minor, patch] = parseVersion(latestVersion);
 
   if (newPreRelease !== null) {
@@ -12,11 +12,6 @@ function validateLatestVersion(version) {
 
   if (newMajor < major) {
     throw new Error(`New major version ${newMajor} is less than latest major version ${major}`);
-  }
-
-  // TODO: We'll worry about 3.x.x later :)
-  if (newMajor !== major) {
-    throw new Error(`Expected major version to be ${major}, but got ${newMajor}`);
   }
 
   const isValid = (newMajor === major && newMinor === minor && newPatch === patch + 1) ||
@@ -31,8 +26,9 @@ function validateLatestVersion(version) {
 }
 
 if (require.main === module) {
-  const version = process.argv[2];
-  console.log(validateLatestVersion(version));
+  const packageName = process.argv[2];
+  const version = process.argv[3];
+  console.log(validateLatestVersion(packageName, version));
 }
 
 module.exports = {

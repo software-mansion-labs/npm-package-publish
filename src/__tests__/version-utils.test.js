@@ -95,20 +95,20 @@ describe('version-utils', () => {
 
     test('returns parsed latest version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
-      const result = getLatestVersion();
+      const result = getLatestVersion('package-name');
       expect(result).toEqual([2, 22, 0, null]);
-      expect(getPackageVersionByTag).toHaveBeenCalledWith('react-native-gesture-handler', 'latest');
+      expect(getPackageVersionByTag).toHaveBeenCalledWith('package-name', 'latest');
     });
 
     test('returns parsed latest version with higher numbers', () => {
       getPackageVersionByTag.mockReturnValue('2.25.3');
-      const result = getLatestVersion();
+      const result = getLatestVersion('package-name');
       expect(result).toEqual([2, 25, 3, null]);
     });
 
     test('throws error for invalid latest version', () => {
       getPackageVersionByTag.mockReturnValue('invalid');
-      expect(() => getLatestVersion()).toThrow('Failed to parse latest version: invalid');
+      expect(() => getLatestVersion('package-name')).toThrow('Failed to parse latest version: invalid');
     });
   });
 
@@ -122,7 +122,7 @@ describe('version-utils', () => {
       getPackageVersionByTag.mockImplementation(() => {
         throw new Error('Not found');
       });
-      const result = getNextStableVersion();
+      const result = getNextStableVersion('package-name');
       expect(result).toEqual([2, 23, 0]);
     });
 
@@ -133,7 +133,7 @@ describe('version-utils', () => {
         .mockReturnValueOnce('2.22.1') // 2.22.1 exists
         .mockReturnValueOnce('2.22.2') // 2.22.2 exists
         .mockImplementationOnce(() => { throw new Error('Not found'); }); // 2.22.3 doesn't exist
-      const result = getNextStableVersion();
+      const result = getNextStableVersion('package-name');
       expect(result).toEqual([2, 22, 3]);
     });
   });
@@ -147,7 +147,7 @@ describe('version-utils', () => {
       getPackageVersionByTag.mockImplementation(() => {
         throw new Error('Not found');
       });
-      const result = getNextPreReleaseVersion('rc', '2.22.0');
+      const result = getNextPreReleaseVersion('package-name', 'rc', '2.22.0');
       expect(result).toBe('2.22.0-rc.1');
     });
 
@@ -155,7 +155,7 @@ describe('version-utils', () => {
       getPackageVersionByTag.mockImplementation(() => {
         throw new Error('Not found');
       });
-      const result = getNextPreReleaseVersion('beta', '2.22.0');
+      const result = getNextPreReleaseVersion('package-name', 'beta', '2.22.0');
       expect(result).toBe('2.22.0-beta.1');
     });
 
@@ -164,7 +164,7 @@ describe('version-utils', () => {
         .mockReturnValueOnce('2.22.0-rc.1') // rc.1 exists
         .mockReturnValueOnce('2.22.0-rc.2') // rc.2 exists
         .mockImplementationOnce(() => { throw new Error('Not found'); }); // rc.3 doesn't exist
-      const result = getNextPreReleaseVersion('rc', '2.22.0');
+      const result = getNextPreReleaseVersion('package-name', 'rc', '2.22.0');
       expect(result).toBe('2.22.0-rc.3');
     });
 
@@ -172,7 +172,7 @@ describe('version-utils', () => {
       getPackageVersionByTag
         .mockReturnValueOnce('2.22.0-beta.1') // beta.1 exists
         .mockImplementationOnce(() => { throw new Error('Not found'); }); // beta.2 doesn't exist
-      const result = getNextPreReleaseVersion('beta', '2.22.0');
+      const result = getNextPreReleaseVersion('package-name', 'beta', '2.22.0');
       expect(result).toBe('2.22.0-beta.2');
     });
 
@@ -180,7 +180,7 @@ describe('version-utils', () => {
       getPackageVersionByTag.mockImplementation(() => {
         throw new Error('Not found');
       });
-      const result = getNextPreReleaseVersion('rc', '2.23.0');
+      const result = getNextPreReleaseVersion('package-name', 'rc', '2.23.0');
       expect(result).toBe('2.23.0-rc.1');
     });
   });
