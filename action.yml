@@ -27,13 +27,6 @@ runs:
         echo "PACKAGE_NAME=PLACEHOLDER" >> $GITHUB_ENV
         echo "PACKAGE_DIR=$(dirname "${{ inputs.package-json-path }}")" >> $GITHUB_ENV
 
-    - name: Setup Node
-      uses: actions/setup-node@v6
-      with:
-        node-version: 24
-        cache: 'yarn'
-        registry-url: https://registry.npmjs.org/
-
     - name: Update package version
       id: set-package-version
       shell: bash
