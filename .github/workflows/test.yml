@@ -1,0 +1,39 @@
+name: Test action
+on:
+  workflow_dispatch:
+    inputs:
+      package-name:
+        description: Name of the package to publish.
+        type: string
+        required: true
+        default: 'react-native-gesture-handler'
+      release-type:
+        description: Type of release to publish.
+        type: choice
+        options:
+          - stable
+          - nightly
+          - beta
+          - rc
+        default: stable
+      version:
+        description: Specific version to publish (usually inferred from x.y-stable branch name).
+        type: string
+        required: false
+        default: ''
+
+jobs:
+  test-action:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v4
+
+      - name: Run action
+        uses: ./ 
+        with:
+          package-name: ${{ inputs.package-name }}
+          package-json-path: './package.json'
+          release-type: ${{ inputs.release-type }}
+          version: ${{ inputs.version }}
+          dry-run: true
