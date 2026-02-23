@@ -5,7 +5,7 @@ const { getPackageVersionByTag } = require('./npm-utils');
 
 function getVersion(packageName, releaseType, versionHint = null) {
   if (releaseType === ReleaseType.NIGHTLY) {
-    let [major, minor] = getLatestVersion();
+    let [major, minor] = getLatestVersion(packageName);
 
     if (major === 2) {
       // If the latest version is 2.x.x, we are still in the beta period for 3.x.x

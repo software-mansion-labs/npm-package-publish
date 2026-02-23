@@ -25,33 +25,47 @@ runs:
   steps:
     - name: Set up environment
       shell: bash
+      env:
+        INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
       run: |
         echo "PACKAGE_NAME=PLACEHOLDER" >> $GITHUB_ENV
-        echo "PACKAGE_DIR=$(dirname "${{ inputs.package-json-path }}")" >> $GITHUB_ENV
+        echo "PACKAGE_DIR=$(dirname "$INPUT_PACKAGE_JSON_PATH")" >> $GITHUB_ENV
 
     - name: Update package version
       id: set-package-version
       shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
+        INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
+        INPUT_VERSION: ${{ inputs.version }}
       run: |
-        VERSION=$(node ${{ github.action_path }}/src/set-package-version.js --package-name ${{ inputs.package-name }} --package-json-path ${{ inputs.package-json-path }} ${{ inputs.release-type == 'nightly' && '--nightly' || '' }} ${{ inputs.release-type == 'beta' && '--beta' || '' }} ${{ inputs.release-type == 'rc' && '--rc' || '' }} ${{ inputs.version != '' && format('--version ''{0}''', inputs.version) || '' }})
+        ARGS=(--package-name "$INPUT_PACKAGE_NAME" --package-json-path "$INPUT_PACKAGE_JSON_PATH")
+        if [ "$INPUT_RELEASE_TYPE" = "nightly" ]; then ARGS+=(--nightly); fi
+        if [ "$INPUT_RELEASE_TYPE" = "beta" ]; then ARGS+=(--beta); fi
+        if [ "$INPUT_RELEASE_TYPE" = "rc" ]; then ARGS+=(--rc); fi
+        if [ -n "$INPUT_VERSION" ]; then ARGS+=(--version "$INPUT_VERSION"); fi
+        VERSION=$(node "${{ github.action_path }}/src/set-package-version.js" "${ARGS[@]}")
         echo "Updated package version to $VERSION"
         echo "version=$VERSION" >> $GITHUB_OUTPUT
 
     - name: Figure out the correct npm tag
       id: figure-out-npm-tag
       shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
+        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
       run: |
-        if [ "${{ inputs.release-type == 'nightly' }}" = "true" ]; then
+        if [ "$INPUT_RELEASE_TYPE" = "nightly" ]; then
           TAG_ARGUMENT="--tag nightly"
+        elif [ "$INPUT_RELEASE_TYPE" = "beta" ] || [ "$INPUT_RELEASE_TYPE" = "rc" ]; then
+          TAG_ARGUMENT="--tag next"
         else
-          if [ "${{ inputs.release-type == 'beta' || inputs.release-type == 'rc' }}" = "true" ]; then
-            TAG_ARGUMENT="--tag next"
+          if [ "$(node "${{ github.action_path }}/src/should-be-latest.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION")" = "true" ]; then
+            TAG_ARGUMENT="--tag latest"
           else
-            if [ $(node ${{ github.action_path }}/src/should-be-latest.js ${{ inputs.package-name }} ${{ steps.set-package-version.outputs.version }}) = "true" ]; then
-              TAG_ARGUMENT="--tag latest"
-            else
-              TAG_ARGUMENT="--tag legacy"
-            fi
+            TAG_ARGUMENT="--tag legacy"
           fi
         fi
 
@@ -61,20 +75,29 @@ runs:
     - name: Validate latest version
       if: steps.figure-out-npm-tag.outputs.tag-argument == '--tag latest'
       shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
       run: |
-        node ${{ github.action_path }}/src/validate-latest-version.js ${{ inputs.package-name }} ${{ steps.set-package-version.outputs.version }}
+        node "${{ github.action_path }}/src/validate-latest-version.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION"
 
     - name: Validate non-latest version
       if: steps.figure-out-npm-tag.outputs.tag-argument != '--tag latest'
       shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
+        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
       run: |
-        node ${{ github.action_path }}/src/validate-non-latest-version.js ${{ inputs.package-name }} ${{ steps.set-package-version.outputs.version }}
+        node "${{ github.action_path }}/src/validate-non-latest-version.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION"
 
     - name: Print outputs
       shell: bash
+      env:
+        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
+        NPM_TAG_ARGUMENT: ${{ steps.figure-out-npm-tag.outputs.tag-argument }}
       run: |
-        echo "Version to be published: ${{ steps.set-package-version.outputs.version }}"
-        echo "NPM tag argument: ${{ steps.figure-out-npm-tag.outputs.tag-argument }}"
+        echo "Version to be published: $PACKAGE_VERSION"
+        echo "NPM tag argument: $NPM_TAG_ARGUMENT"
 
     # Ensure npm 11.5.1 or later is installed for OIDC
     - name: Update npm
@@ -116,8 +139,10 @@ runs:
     - name: Delete legacy tag
       if: inputs.dry-run == 'false' && steps.figure-out-npm-tag.outputs.tag-argument == '--tag legacy'
       shell: bash
+      env:
+        INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
       run: |
-        npm dist-tag rm ${{ inputs.package-name }} legacy || echo "No legacy tag to remove"
+        npm dist-tag rm "$INPUT_PACKAGE_NAME" legacy || echo "No legacy tag to remove"
 
     - name: Configure git
       if: inputs.release-type == 'stable'
@@ -131,11 +156,15 @@ runs:
     - name: Create release commit
       if: inputs.release-type == 'stable' && steps.configure-git.outputs.branch-name != 'main'
       shell: bash
+      env:
+        INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
       run: |
-        git add ${{ inputs.package-json-path }}
-        git commit -m "Release v${{ steps.set-package-version.outputs.version }}"
+        git add "$INPUT_PACKAGE_JSON_PATH"
+        git commit -m "Release v$PACKAGE_VERSION"
         
-        if [ "${{ inputs.dry-run }}" = 'false' ]; then
+        if [ "$INPUT_DRY_RUN" = 'false' ]; then
           echo "Pushing release commit to origin..."
           git push
         else
@@ -145,12 +174,15 @@ runs:
     - name: Create release tag
       if: inputs.release-type == 'stable'
       shell: bash
+      env:
+        INPUT_DRY_RUN: ${{ inputs.dry-run }}
+        PACKAGE_VERSION: ${{ steps.set-package-version.outputs.version }}
       run: |
-        git tag -a "v${{ steps.set-package-version.outputs.version }}" -m "Release v${{ steps.set-package-version.outputs.version }}"
+        git tag -a "v$PACKAGE_VERSION" -m "Release v$PACKAGE_VERSION"
         
-        if [ "${{ inputs.dry-run }}" = 'false' ]; then
+        if [ "$INPUT_DRY_RUN" = 'false' ]; then
           echo "Pushing tag to origin..."
-          git push origin "v${{ steps.set-package-version.outputs.version }}"
+          git push origin "v$PACKAGE_VERSION"
         else
           echo "Dry run mode: skipping git push"
         fi
