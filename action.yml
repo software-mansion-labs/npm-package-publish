@@ -133,8 +133,13 @@ runs:
     - name: Publish npm package
       shell: bash
       working-directory: ${{ env.PACKAGE_DIR }}
+      env:
+        NPM_TAG_ARGUMENT: ${{ steps.figure-out-npm-tag.outputs.tag-argument }}
+        DRY_RUN: ${{ inputs.dry-run }}
       run: |
-        npm publish $PACKAGE_NAME --provenance ${{ steps.figure-out-npm-tag.outputs.tag-argument }} ${{ inputs.dry-run == 'true' && '--dry-run' || '' }}
+        DRY_RUN_ARG=""
+        if [ "$DRY_RUN" = "true" ]; then DRY_RUN_ARG="--dry-run"; fi
+        npm publish $PACKAGE_NAME --provenance $NPM_TAG_ARGUMENT $DRY_RUN_ARG
 
     - name: Delete legacy tag
       if: inputs.dry-run == 'false' && steps.figure-out-npm-tag.outputs.tag-argument == '--tag legacy'
