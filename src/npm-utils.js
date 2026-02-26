@@ -16,19 +16,28 @@ function getPackageVersionByTag(packageName, tag) {
 
 function getNextPatchVersion(packageName, major, minor) {
   const range = `${major}.${minor}.x`;
+
+  let rawResult;
   try {
-    const result = execSync(
+    rawResult = execSync(
       `npm view ${packageName}@"${range}" version --json`,
       { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
     ).toString().trim();
-
-    const parsed = JSON.parse(result);
-    const versions = Array.isArray(parsed) ? parsed : [parsed];
-    const maxPatch = Math.max(...versions.map(v => Number(v.split('.')[2])));
-    return maxPatch + 1;
   } catch {
+    // No versions published yet for this major.minor range
     return 0;
   }
+
+  const parsed = JSON.parse(rawResult);
+  const versions = Array.isArray(parsed) ? parsed : [parsed];
+  const patches = versions.map(v => {
+    const patch = Number(v.split('.')[2]);
+    if (Number.isNaN(patch)) {
+      throw new Error(`Unexpected version format in npm output: ${v}`);
+    }
+    return patch;
+  });
+  return Math.max(...patches) + 1;
 }
 
 module.exports = {
