@@ -36,7 +36,7 @@ describe('get-version', () => {
     };
 
     // By default, simulate that the latest nightly was published with a different SHA
-    getPackageVersionByTag.mockReturnValue('3.0.0-nightly-20260128-previoussha');
+    getPackageVersionByTag.mockReturnValue('3.0.0-nightly-20260128-def321abc');
   });
 
   afterEach(() => {

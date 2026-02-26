@@ -3,6 +3,8 @@ const { getStableBranchVersion, getLatestVersion, getNextPreReleaseVersion, getN
 const { ReleaseType } = require('./parse-arguments');
 const { getPackageVersionByTag } = require('./npm-utils');
 
+const NIGHTLY_REGEX = /^(\d+\.\d+\.\d+)-nightly-\d{8}-([0-9a-f]+)$/;
+
 function getVersion(packageName, releaseType, versionHint = null) {
   if (releaseType === ReleaseType.NIGHTLY) {
     let major, minor, patch;
@@ -21,9 +23,13 @@ function getVersion(packageName, releaseType, versionHint = null) {
 
     try {
       const latestNightlyVersionString = getPackageVersionByTag(packageName, 'nightly');
-      const latestNightlyVersionParts = latestNightlyVersionString.split('-');
-      latestNightlyVersion = latestNightlyVersionParts.shift();
-      latestNightlySHA = latestNightlyVersionParts.pop();
+      const match = latestNightlyVersionString.match(NIGHTLY_REGEX);
+      if (match) {
+        latestNightlyVersion = match[1];
+        latestNightlySHA = match[2];
+      } else {
+        console.warn(`Unexpected nightly version format: ${latestNightlyVersionString}`);
+      }
     } catch (error) {
       console.warn(`Failed to get latest nightly version for ${packageName}: ${error.message}`);
     }
