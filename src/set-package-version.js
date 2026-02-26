@@ -3,9 +3,9 @@ const { parseArguments } = require('./parse-arguments');
 const { getVersion } = require('./get-version');
 
 function setPackageVersion() {
-  const { releaseType, version: preReleaseVersion, packageName, packageJsonPath } = parseArguments();
+  const { releaseType, version: versionHint, packageName, packageJsonPath } = parseArguments();
 
-  const version = getVersion(packageName, releaseType, preReleaseVersion);
+  const version = getVersion(packageName, releaseType, versionHint);
   
   const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
   packageJson.version = version;

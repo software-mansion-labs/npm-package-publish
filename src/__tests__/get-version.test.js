@@ -66,15 +66,6 @@ describe('get-version', () => {
         expect(result).toBe('3.1.0-nightly-20260129-fedcba987');
       });
 
-      test('overrides major 2.x release to 3.0.0 nightly', () => {
-        getLatestVersion.mockReturnValue([2, 22, 0, null]);
-        execSync.mockReturnValue(Buffer.from('fedcba987654321\n'));
-
-        const result = getVersion('package-name', ReleaseType.NIGHTLY);
-
-        expect(result).toBe('3.0.0-nightly-20260129-fedcba987');
-      });
-
       test('uses first 9 characters of SHA', () => {
         getLatestVersion.mockReturnValue([2, 22, 0, null]);
         execSync.mockReturnValue(Buffer.from('123456789abcdef0\n'));
@@ -102,7 +93,7 @@ describe('get-version', () => {
         expect(result).toContain('-nightly-20261205-');
       });
 
-      test('throws when latest nightly SHA matches current SHA', () => {
+      test('throws when latest nightly SHA matches current SHA and version is the same', () => {
         global.Date = class extends RealDate {
           constructor(...args) {
             if (args.length === 0) {
@@ -111,12 +102,68 @@ describe('get-version', () => {
             return new RealDate(...args);
           }
         };
-        getLatestVersion.mockReturnValue([2, 22, 0, null]);
+        getLatestVersion.mockReturnValue([3, 0, 0, null]);
         execSync.mockReturnValue(Buffer.from('abc123def\n'));
-        getPackageVersionByTag.mockReturnValue('3.0.0-nightly-20261205-abc123def');
+        getPackageVersionByTag.mockReturnValue('3.1.0-nightly-20261205-abc123def');
 
         expect(() => getVersion('package-name', ReleaseType.NIGHTLY)).toThrow(
-          'Latest nightly version 3.0.0-nightly-20261205-abc123def SHA abc123def is the same as current SHA abc123def'
+          'Latest nightly version 3.1.0-nightly-20261205-abc123def SHA abc123def is the same as current SHA abc123def'
+        );
+      });
+
+      test('uses versionHint directly when provided, skipping getLatestVersion', () => {
+        parseVersion.mockReturnValue([4, 2, 0]);
+        execSync.mockReturnValue(Buffer.from('abc123def456789\n'));
+
+        const result = getVersion('package-name', ReleaseType.NIGHTLY, '4.2.0');
+
+        expect(result).toBe('4.2.0-nightly-20260129-abc123def');
+        expect(parseVersion).toHaveBeenCalledWith('4.2.0');
+        expect(getLatestVersion).not.toHaveBeenCalled();
+      });
+
+      test('returns nightly version with exact major.minor.patch from versionHint', () => {
+        parseVersion.mockReturnValue([3, 5, 2]);
+        execSync.mockReturnValue(Buffer.from('fedcba987654321\n'));
+
+        const result = getVersion('package-name', ReleaseType.NIGHTLY, '3.5.2');
+
+        expect(result).toBe('3.5.2-nightly-20260129-fedcba987');
+      });
+
+      test('does not throw when SHA matches but computed version differs from latest nightly version', () => {
+        getLatestVersion.mockReturnValue([3, 0, 0, null]);
+        execSync.mockReturnValue(Buffer.from('abc123def\n'));
+        // Latest nightly is 3.0.0 but the new version would be 3.1.0 — different version, same SHA is OK
+        getPackageVersionByTag.mockReturnValue('3.0.0-nightly-20260128-abc123def');
+
+        expect(() => getVersion('package-name', ReleaseType.NIGHTLY)).not.toThrow();
+      });
+
+      test('does not throw when versionHint SHA matches but versions differ', () => {
+        parseVersion.mockReturnValue([4, 0, 0]);
+        execSync.mockReturnValue(Buffer.from('abc123def\n'));
+        // Latest nightly is 3.1.0, versionHint produces 4.0.0 — different version, same SHA is OK
+        getPackageVersionByTag.mockReturnValue('3.1.0-nightly-20260128-abc123def');
+
+        expect(() => getVersion('package-name', ReleaseType.NIGHTLY, '4.0.0')).not.toThrow();
+      });
+
+      test('throws when versionHint SHA matches and version matches latest nightly', () => {
+        global.Date = class extends RealDate {
+          constructor(...args) {
+            if (args.length === 0) {
+              return new RealDate('2026-01-29T12:00:00Z');
+            }
+            return new RealDate(...args);
+          }
+        };
+        parseVersion.mockReturnValue([4, 0, 0]);
+        execSync.mockReturnValue(Buffer.from('abc123def\n'));
+        getPackageVersionByTag.mockReturnValue('4.0.0-nightly-20260129-abc123def');
+
+        expect(() => getVersion('package-name', ReleaseType.NIGHTLY, '4.0.0')).toThrow(
+          'Latest nightly version 4.0.0-nightly-20260129-abc123def SHA abc123def is the same as current SHA abc123def'
         );
       });
 

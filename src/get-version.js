@@ -5,24 +5,27 @@ const { getPackageVersionByTag } = require('./npm-utils');
 
 function getVersion(packageName, releaseType, versionHint = null) {
   if (releaseType === ReleaseType.NIGHTLY) {
-    let [major, minor] = getLatestVersion(packageName);
-
-    if (major === 2) {
-      // If the latest version is 2.x.x, we are still in the beta period for 3.x.x
-      // Override the values so the resulting version is 3.0.0
-      // TODO: Remove this once we have a stable 3.x.x release
-      major = 3;
-      minor = -1;
+    let major, minor, patch;
+    if (versionHint) {
+      [major, minor, patch] = parseVersion(versionHint);
+    } else {
+      [major, minor] = getLatestVersion(packageName);
+      minor++;
+      patch = 0;
     }
 
     const currentSHA = execSync('git rev-parse HEAD').toString().trim().slice(0, 9);
 
-    const latestNightlyVersion = getPackageVersionByTag(packageName, 'nightly');
-    const latestNightlySHA = latestNightlyVersion.split('-').pop();
+    const latestNightlyVersionString = getPackageVersionByTag(packageName, 'nightly');
+    const latestNightlyVersionParts = latestNightlyVersionString.split('-');
+    const latestNightlySHA = latestNightlyVersionParts.pop();
+    const latestNightlyVersion = latestNightlyVersionParts.shift();
 
-    // Don't publish the same commit twice
-    if (latestNightlySHA === currentSHA) {
-      throw new Error(`Latest nightly version ${latestNightlyVersion} SHA ${latestNightlySHA} is the same as current SHA ${currentSHA}`);
+    const versionToUse = `${major}.${minor}.${patch}`;
+
+    // Don't publish the same commit twice if the version is the same
+    if (latestNightlySHA === currentSHA && latestNightlyVersion === versionToUse) {
+      throw new Error(`Latest nightly version ${latestNightlyVersionString} SHA ${latestNightlySHA} is the same as current SHA ${currentSHA}`);
     }
 
     const now = new Date();
@@ -31,7 +34,7 @@ function getVersion(packageName, releaseType, versionHint = null) {
     const day = String(now.getDate()).padStart(2, '0');
     const currentDate = `${year}${month}${day}`;
 
-    const nightlyVersion = `${major}.${minor + 1}.${0}-nightly-${currentDate}-${currentSHA}`;
+    const nightlyVersion = `${versionToUse}-nightly-${currentDate}-${currentSHA}`;
     return nightlyVersion;
   } else if (releaseType === ReleaseType.BETA || releaseType === ReleaseType.RELEASE_CANDIDATE) {
     let versionToUse = versionHint;

@@ -84,10 +84,11 @@ describe('parse-arguments', () => {
       expect(() => parseArguments()).toThrow('Release flags --nightly, --beta, and --rc are mutually exclusive');
     });
 
-    // Version not allowed for nightly
-    test('throws error when version provided for nightly release', () => {
-      process.argv = ['node', 'script.js', '--nightly', '--version', '2.22.0', '--package-name', 'package-name'];
-      expect(() => parseArguments()).toThrow();
+    // Version allowed for nightly
+    test('returns nightly with version when both --nightly and --version are provided', () => {
+      process.argv = ['node', 'script.js', '--nightly', '--version', '4.0.0', '--package-name', 'package-name'];
+      const result = parseArguments();
+      expect(result).toEqual({ releaseType: ReleaseType.NIGHTLY, version: '4.0.0', packageName: 'package-name', packageJsonPath: null });
     });
 
     // Version format validation
