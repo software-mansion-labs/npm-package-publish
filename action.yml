@@ -102,7 +102,7 @@ runs:
     # Ensure npm 11.5.1 or later is installed for OIDC
     - name: Update npm
       shell: bash
-      run: npm install -g npm@latest
+      run: npm install -g npm@11.11.0
 
     - name: Install node dependencies
       shell: bash
