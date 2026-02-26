@@ -44,6 +44,8 @@ function parseArguments() {
       } else {
         throw new Error('Expected a package JSON path after --package-json-path');
       }
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
     }
   }
 
