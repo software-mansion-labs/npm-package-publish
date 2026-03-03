@@ -16,7 +16,6 @@ function withRetry(fn, { retries = RETRY_COUNT, baseDelayMs = BASE_RETRY_DELAY_M
       return fn();
     } catch (error) {
       lastError = error;
-      console.warn(`Failed to query npm for package version: ${error.message}`, { cause: error });
       if (attempt < retries) {
         sleep(baseDelayMs * (2 ** attempt));
       }
