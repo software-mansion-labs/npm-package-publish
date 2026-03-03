@@ -131,5 +131,22 @@ describe('validate-latest-version', () => {
         'Version 2.23.1 is not a valid latest version based on latest published version 2.22.0'
       );
     });
+
+    test('returns true when no latest tag exists (first publish)', () => {
+      getPackageVersionByTag.mockImplementation(() => {
+        throw new Error('Package not found');
+      });
+      const result = validateLatestVersion('new-package', '1.0.0');
+      expect(result).toBe(true);
+    });
+
+    test('still rejects pre-release versions even when no latest tag exists', () => {
+      getPackageVersionByTag.mockImplementation(() => {
+        throw new Error('Package not found');
+      });
+      expect(() => validateLatestVersion('new-package', '1.0.0-beta.1')).toThrow(
+        'Pre-release version 1.0.0-beta.1 cannot be the latest version'
+      );
+    });
   });
 });

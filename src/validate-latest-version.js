@@ -3,12 +3,20 @@ const { parseVersion } = require('./version-utils');
 
 function validateLatestVersion(packageName, version) {
   const [newMajor, newMinor, newPatch, newPreRelease] = parseVersion(version);
-  const latestVersion = getPackageVersionByTag(packageName, 'latest');
-  const [major, minor, patch] = parseVersion(latestVersion);
 
   if (newPreRelease !== null) {
     throw new Error(`Pre-release version ${version} cannot be the latest version`);
   }
+
+  let latestVersion;
+  try {
+    latestVersion = getPackageVersionByTag(packageName, 'latest');
+  } catch {
+    // No 'latest' tag exists — package has never been published.
+    // newPreRelease is guaranteed null here (checked above), so the version is safe to become latest.
+    return true;
+  }
+  const [major, minor, patch] = parseVersion(latestVersion);
 
   if (newMajor < major) {
     throw new Error(`New major version ${newMajor} is less than latest major version ${major}`);
