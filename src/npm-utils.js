@@ -32,7 +32,7 @@ function getPackageVersionByTag(packageName, tag) {
 
   try {
     const result = withRetry(() =>
-      execSync(npmString, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 })
+      execSync(npmString, { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 })
     ).toString().trim();
     return result;
   } catch (error) {
@@ -48,7 +48,7 @@ function getNextPatchVersion(packageName, major, minor) {
     rawResult = withRetry(() =>
       execSync(
         `npm view ${packageName}@"${range}" version --json`,
-        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
+        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
       )
     ).toString().trim();
   } catch {
@@ -82,7 +82,7 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
     rawResult = withRetry(() =>
       execSync(
         `npm view "${packageName}@${range}" version --json`,
-        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 60000 }
+        { stdio: ['ignore', 'pipe', 'pipe'], timeout: 20000 }
       )
     ).toString().trim();
   } catch {
