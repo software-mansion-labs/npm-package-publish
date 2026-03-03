@@ -3,9 +3,43 @@ jest.mock('child_process', () => ({
 }));
 
 const { execSync } = require('child_process');
-const { getNextPatchVersion, getNextPreReleaseIndex } = require('../npm-utils');
+const { getNextPatchVersion, getNextPreReleaseIndex, isPackageNotFoundError } = require('../npm-utils');
+
+function makeNpmError({ message = 'Command failed: npm view pkg@latest version', stderr = '' } = {}) {
+  const cause = Object.assign(new Error(message), {
+    stderr: stderr ? Buffer.from(stderr) : undefined,
+  });
+  return new Error('Failed to get package version for pkg by tag: latest', { cause });
+}
 
 describe('npm-utils', () => {
+  describe('isPackageNotFoundError', () => {
+    test('returns true when stderr contains E404', () => {
+      const error = makeNpmError({ stderr: 'npm error code E404\nnpm error 404 Not Found' });
+      expect(isPackageNotFoundError(error)).toBe(true);
+    });
+
+    test('returns true when message contains E404 (Node.js includes stderr in message)', () => {
+      const error = makeNpmError({ message: 'Command failed: npm view pkg@latest version\nnpm error code E404' });
+      expect(isPackageNotFoundError(error)).toBe(true);
+    });
+
+    test('returns false when neither stderr nor message contains E404', () => {
+      const error = makeNpmError({ message: 'Command failed: npm view pkg@latest version', stderr: 'npm error code ECONNRESET' });
+      expect(isPackageNotFoundError(error)).toBe(false);
+    });
+
+    test('returns false when error has no cause', () => {
+      expect(isPackageNotFoundError(new Error('no cause'))).toBe(false);
+    });
+
+    test('returns false when cause has no message and no stderr', () => {
+      const cause = {};
+      const error = Object.assign(new Error('wrapper'), { cause });
+      expect(isPackageNotFoundError(error)).toBe(false);
+    });
+  });
+
   describe('getNextPatchVersion', () => {
     beforeEach(() => {
       jest.clearAllMocks();

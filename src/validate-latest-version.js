@@ -1,4 +1,4 @@
-const { getPackageVersionByTag } = require('./npm-utils');
+const { getPackageVersionByTag, isPackageNotFoundError } = require('./npm-utils');
 const { parseVersion } = require('./version-utils');
 
 function validateLatestVersion(packageName, version) {
@@ -11,10 +11,14 @@ function validateLatestVersion(packageName, version) {
   let latestVersion;
   try {
     latestVersion = getPackageVersionByTag(packageName, 'latest');
-  } catch {
-    // No 'latest' tag exists — package has never been published.
-    // newPreRelease is guaranteed null here (checked above), so the version is safe to become latest.
-    return true;
+  } catch (error) {
+    if (isPackageNotFoundError(error)) {
+      // No 'latest' tag exists — package has never been published.
+      // newPreRelease is guaranteed null here (checked above), so the version is safe to become latest.
+      return true;
+    }
+
+    throw error;
   }
   const [major, minor, patch] = parseVersion(latestVersion);
 

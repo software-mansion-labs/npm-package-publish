@@ -1,8 +1,9 @@
 jest.mock('../npm-utils', () => ({
   getPackageVersionByTag: jest.fn(),
+  isPackageNotFoundError: jest.fn(),
 }));
 
-const { getPackageVersionByTag } = require('../npm-utils');
+const { getPackageVersionByTag, isPackageNotFoundError } = require('../npm-utils');
 const { shouldBeLatest } = require('../should-be-latest');
 
 describe('should-be-latest', () => {
@@ -108,12 +109,18 @@ describe('should-be-latest', () => {
       expect(result).toBe(false);
     });
 
-    test('returns true when no latest tag exists (first publish)', () => {
-      getPackageVersionByTag.mockImplementation(() => {
-        throw new Error('Package not found');
-      });
-      const result = shouldBeLatest('new-package', '1.0.0');
-      expect(result).toBe(true);
+    test('returns true when the error is a package-not-found error (first publish)', () => {
+      const error = new Error('Package not found');
+      getPackageVersionByTag.mockImplementation(() => { throw error; });
+      isPackageNotFoundError.mockReturnValue(true);
+      expect(shouldBeLatest('new-package', '1.0.0')).toBe(true);
+    });
+
+    test('re-throws errors that are not package-not-found', () => {
+      const error = new Error('network timeout');
+      getPackageVersionByTag.mockImplementation(() => { throw error; });
+      isPackageNotFoundError.mockReturnValue(false);
+      expect(() => shouldBeLatest('new-package', '1.0.0')).toThrow('network timeout');
     });
   });
 });

@@ -14,6 +14,13 @@ function getPackageVersionByTag(packageName, tag) {
   }
 }
 
+function isPackageNotFoundError(error) {
+  const cause = error.cause;
+  if (!cause) return false;
+  const text = (cause.stderr?.toString() ?? '') + (cause.message ?? '');
+  return text.includes('E404');
+}
+
 function getNextPatchVersion(packageName, major, minor) {
   const range = `${major}.${minor}.x`;
 
@@ -77,6 +84,7 @@ function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
 
 module.exports = {
   getPackageVersionByTag,
+  isPackageNotFoundError,
   getNextPatchVersion,
   getNextPreReleaseIndex,
 };
