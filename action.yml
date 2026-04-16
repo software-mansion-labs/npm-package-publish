@@ -55,7 +55,7 @@ runs:
         INPUT_PACKAGE_NAME: ${{ inputs.package-name }}
         INPUT_PACKAGE_JSON_PATH: ${{ inputs.package-json-path }}
       run: |
-        ACTUAL_NAME=$(node -p "require('./' + process.env.INPUT_PACKAGE_JSON_PATH).name")
+        ACTUAL_NAME=$(node -p "require(require('path').resolve(process.env.INPUT_PACKAGE_JSON_PATH)).name")
         if [ "$INPUT_PACKAGE_NAME" != "$ACTUAL_NAME" ]; then
           echo "Package name mismatch: input 'package-name' is '$INPUT_PACKAGE_NAME' but $INPUT_PACKAGE_JSON_PATH has '$ACTUAL_NAME'"
           exit 1
@@ -174,7 +174,8 @@ runs:
         NPM_VERSION=$(npm --version)
         NPM_MAJOR=$(echo "$NPM_VERSION" | cut -d. -f1)
         NPM_MINOR=$(echo "$NPM_VERSION" | cut -d. -f2)
-        if [ "$NPM_MAJOR" -lt 11 ] || { [ "$NPM_MAJOR" -eq 11 ] && [ "$NPM_MINOR" -lt 5 ]; }; then
+        NPM_PATCH=$(echo "$NPM_VERSION" | cut -d. -f3)
+        if [ "$NPM_MAJOR" -lt 11 ] || { [ "$NPM_MAJOR" -eq 11 ] && [ "$NPM_MINOR" -lt 5 ]; } || { [ "$NPM_MAJOR" -eq 11 ] && [ "$NPM_MINOR" -eq 5 ] && [ "$NPM_PATCH" -lt 1 ]; }; then
           echo "npm $NPM_VERSION is too old, upgrading to 11.11.0..."
           npm install -g npm@11.11.0
         else
@@ -234,7 +235,11 @@ runs:
       run: |
         DRY_RUN_ARG=""
         if [ "$DRY_RUN" = "true" ]; then DRY_RUN_ARG="--dry-run"; fi
-        $PM publish --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
+        if [ "$PM" = "npm" ]; then
+          npm publish "$PACKAGE_NAME" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
+        else
+          pnpm publish --provenance --tag "$NPM_TAG" --no-git-checks $DRY_RUN_ARG
+        fi
 
     - name: Delete legacy tag
       if: inputs.dry-run == 'false' && steps.figure-out-npm-tag.outputs.tag == 'legacy'
