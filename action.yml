@@ -234,10 +234,13 @@ runs:
       run: |
         DRY_RUN_ARG=""
         if [ "$DRY_RUN" = "true" ]; then DRY_RUN_ARG="--dry-run"; fi
+        # Omit --tag when publishing to latest; npm/pnpm default to latest.
+        TAG_ARG=""
+        if [ "$NPM_TAG" != "latest" ]; then TAG_ARG="--tag $NPM_TAG"; fi
         if [ "$PM" = "npm" ]; then
-          npm publish "$PACKAGE_TARBALL" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
+          npm publish "$PACKAGE_TARBALL" --provenance $TAG_ARG $DRY_RUN_ARG
         else
-          pnpm publish --provenance --tag "$NPM_TAG" --no-git-checks $DRY_RUN_ARG
+          pnpm publish --provenance $TAG_ARG --no-git-checks $DRY_RUN_ARG
         fi
 
     - name: Delete legacy tag
