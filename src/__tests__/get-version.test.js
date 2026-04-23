@@ -252,6 +252,45 @@ describe('get-version', () => {
       });
     });
 
+    // Alpha release tests
+    describe('alpha releases', () => {
+      test('returns alpha version with provided base version', () => {
+        getNextPreReleaseVersion.mockReturnValue('2.22.0-alpha.1');
+
+        const result = getVersion('package-name', ReleaseType.ALPHA, '2.22.0');
+
+        expect(result).toBe('2.22.0-alpha.1');
+        expect(getNextPreReleaseVersion).toHaveBeenCalledWith(
+          'package-name',
+          ReleaseType.ALPHA,
+          '2.22.0',
+        );
+      });
+
+      test('derives base version from stable branch when not provided', () => {
+        getStableBranchVersion.mockReturnValue([2, 25]);
+        getNextPreReleaseVersion.mockReturnValue('2.25.0-alpha.1');
+
+        const result = getVersion('package-name', ReleaseType.ALPHA);
+
+        expect(result).toBe('2.25.0-alpha.1');
+        expect(getStableBranchVersion).toHaveBeenCalled();
+        expect(getNextPreReleaseVersion).toHaveBeenCalledWith(
+          'package-name',
+          ReleaseType.ALPHA,
+          '2.25.0',
+        );
+      });
+
+      test('returns incremented alpha version', () => {
+        getNextPreReleaseVersion.mockReturnValue('2.22.0-alpha.7');
+
+        const result = getVersion('package-name', ReleaseType.ALPHA, '2.22.0');
+
+        expect(result).toBe('2.22.0-alpha.7');
+      });
+    });
+
     // RC release tests
     describe('release candidate releases', () => {
       test('returns rc version with provided base version', () => {

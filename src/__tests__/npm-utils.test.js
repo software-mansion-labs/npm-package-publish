@@ -281,14 +281,52 @@ describe('npm-utils', () => {
 
     test('throws for an invalid release type', () => {
       expect(() => getNextPreReleaseIndex('package-name', '2.22.0', 'nightly')).toThrow(
-        'Invalid pre-release type: nightly. Must be "beta" or "rc".',
+        'Invalid pre-release type: nightly. Must be "beta", "alpha", or "rc".',
       );
     });
 
     test('throws for an empty release type', () => {
       expect(() => getNextPreReleaseIndex('package-name', '2.22.0', '')).toThrow(
-        'Invalid pre-release type: . Must be "beta" or "rc".',
+        'Invalid pre-release type: . Must be "beta", "alpha", or "rc".',
       );
+    });
+
+    test('accepts alpha as a valid release type', () => {
+      execSync.mockReturnValue(Buffer.from(JSON.stringify(['2.22.0-alpha.1', '2.22.0-alpha.2'])));
+      const result = getNextPreReleaseIndex('package-name', '2.22.0', 'alpha');
+      expect(result).toBe(3);
+    });
+
+    test('returns 1 for alpha when no versions are published', () => {
+      execSync.mockImplementation(() => {
+        throw makeNpmError({ message: 'npm error code E404' });
+      });
+      const result = getNextPreReleaseIndex('package-name', '2.22.0', 'alpha');
+      expect(result).toBe(1);
+    });
+
+    test('queries npm with the correct range for alpha', () => {
+      execSync.mockReturnValue(Buffer.from(JSON.stringify('2.22.0-alpha.1')));
+      getNextPreReleaseIndex('package-name', '2.22.0', 'alpha');
+      expect(execSync).toHaveBeenCalledWith(
+        'npm view "package-name@>=2.22.0-alpha.0 <2.22.0" version --json',
+        expect.objectContaining({ timeout: 20000 }),
+      );
+    });
+
+    test('filters out other release types when querying for alpha', () => {
+      execSync.mockReturnValue(
+        Buffer.from(
+          JSON.stringify([
+            '2.22.0-alpha.1',
+            '2.22.0-beta.2',
+            '2.22.0-nightly-20260101-abc123def',
+            '2.22.0-rc.1',
+          ]),
+        ),
+      );
+      const result = getNextPreReleaseIndex('package-name', '2.22.0', 'alpha');
+      expect(result).toBe(2);
     });
 
     test('retries on transient failure and returns result on subsequent success', () => {

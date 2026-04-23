@@ -27,6 +27,13 @@ describe('validate-latest-version', () => {
       );
     });
 
+    test('throws error for alpha pre-release version', () => {
+      getPackageVersionByTag.mockReturnValue('2.22.0');
+      expect(() => validateLatestVersion('package-name', '2.22.1-alpha.1')).toThrow(
+        'Pre-release version 2.22.1-alpha.1 cannot be the latest version',
+      );
+    });
+
     test('throws error for nightly version', () => {
       getPackageVersionByTag.mockReturnValue('2.22.0');
       expect(() =>

@@ -8,7 +8,7 @@ inputs:
     description: Path to the package.json file to update.
     required: true
   release-type:
-    description: Release type to be published (stable, nightly, beta, rc).
+    description: Release type to be published (stable, nightly, beta, alpha, rc).
     default: "nightly"
   version:
     description: Specific version to publish (usually inferred from x.y-stable branch name).
@@ -45,7 +45,7 @@ runs:
       env:
         INPUT_RELEASE_TYPE: ${{ inputs.release-type }}
       run: |
-        if [ "$INPUT_RELEASE_TYPE" != "stable" ] && [ "$INPUT_RELEASE_TYPE" != "nightly" ] && [ "$INPUT_RELEASE_TYPE" != "beta" ] && [ "$INPUT_RELEASE_TYPE" != "rc" ]; then
+        if [ "$INPUT_RELEASE_TYPE" != "stable" ] && [ "$INPUT_RELEASE_TYPE" != "nightly" ] && [ "$INPUT_RELEASE_TYPE" != "beta" ] && [ "$INPUT_RELEASE_TYPE" != "alpha" ] && [ "$INPUT_RELEASE_TYPE" != "rc" ]; then
           echo "Invalid release type: $INPUT_RELEASE_TYPE"
           exit 1
         fi
@@ -106,7 +106,7 @@ runs:
 
         if [ "$INPUT_RELEASE_TYPE" = "nightly" ]; then
           TAG="nightly"
-        elif [ "$INPUT_RELEASE_TYPE" = "beta" ] || [ "$INPUT_RELEASE_TYPE" = "rc" ]; then
+        elif [ "$INPUT_RELEASE_TYPE" = "beta" ] || [ "$INPUT_RELEASE_TYPE" = "alpha" ] || [ "$INPUT_RELEASE_TYPE" = "rc" ]; then
           TAG="next"
         else
           if [ "$(node "${{ github.action_path }}/src/should-be-latest.js" "$INPUT_PACKAGE_NAME" "$PACKAGE_VERSION")" = "true" ]; then
