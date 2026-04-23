@@ -45,7 +45,6 @@ runs:
           echo "Invalid package manager: $INPUT_PACKAGE_MANAGER. Must be 'npm' or 'pnpm'."
           exit 1
         fi
-        echo "PACKAGE_NAME=PLACEHOLDER" >> $GITHUB_ENV
         echo "PACKAGE_DIR=$(dirname "$INPUT_PACKAGE_JSON_PATH")" >> $GITHUB_ENV
         echo "PM=$INPUT_PACKAGE_MANAGER" >> $GITHUB_ENV
 
@@ -208,23 +207,23 @@ runs:
       id: build
       working-directory: ${{ env.PACKAGE_DIR }}
       shell: bash
-      run: $PM pack
-
-    - name: Add package name to env
-      working-directory: ${{ env.PACKAGE_DIR }}
-      shell: bash
-      run: echo "PACKAGE_NAME=$(ls *.tgz | head -1)" >> $GITHUB_ENV
-
-    - name: Assert PACKAGE_NAME
-      if: ${{ env.PACKAGE_NAME == 'PLACEHOLDER' }}
-      shell: bash
-      run: exit 1 # If we end up here, it means that package was not generated.
+      run: |
+        # npm pack prints the filename on the last line of stdout;
+        # pnpm pack prints the absolute path. Capture either and normalize.
+        TARBALL=$($PM pack | tail -n1)
+        if [ -z "$TARBALL" ] || [ ! -f "$TARBALL" ]; then
+          echo "Could not locate tarball from '$PM pack' output: '$TARBALL'"
+          exit 1
+        fi
+        TARBALL_ABS=$(realpath "$TARBALL")
+        echo "PACKAGE_NAME=$(basename "$TARBALL_ABS")" >> $GITHUB_ENV
+        echo "PACKAGE_TARBALL=$TARBALL_ABS" >> $GITHUB_ENV
 
     - name: Upload npm package to GitHub
       uses: actions/upload-artifact@v4
       with:
         name: ${{ env.PACKAGE_NAME }}
-        path: "${{ env.PACKAGE_DIR }}/${{ env.PACKAGE_NAME }}"
+        path: ${{ env.PACKAGE_TARBALL }}
 
     - name: Publish npm package
       shell: bash
@@ -236,7 +235,7 @@ runs:
         DRY_RUN_ARG=""
         if [ "$DRY_RUN" = "true" ]; then DRY_RUN_ARG="--dry-run"; fi
         if [ "$PM" = "npm" ]; then
-          npm publish "$PACKAGE_NAME" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
+          npm publish "$PACKAGE_TARBALL" --provenance --tag "$NPM_TAG" $DRY_RUN_ARG
         else
           pnpm publish --provenance --tag "$NPM_TAG" --no-git-checks $DRY_RUN_ARG
         fi
