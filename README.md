@@ -11,7 +11,7 @@ A GitHub composite action that builds and publishes an npm package with automati
 2. **npm tag resolution** — Automatically assigns the correct dist-tag (`nightly`, `next`, `latest`) based on the release type and whether the version is newer than what is currently tagged `latest` on the registry.
 3. **Validation** — Validates that the version being published is sane relative to what already exists on the registry.
 4. **Build & publish** — Runs `npm pack` in the package directory, uploads the `.tgz` artifact to GitHub, and publishes it via `npm publish --provenance`.
-5. **Git bookkeeping** (via `perform-git-operations`) — Creates a `Release vX.Y.Z` commit and an annotated git tag, then pushes them (unless `dry-run` is `true`). The release commit is skipped on `main`; the tag is always pushed when git operations are enabled.
+5. **Git bookkeeping** (via `perform-git-operations`) — Creates a `Release v<resolved-version>` commit and an annotated `v<resolved-version>` git tag, then pushes them (unless `dry-run` is `true`). The release commit is skipped on `main`; the tag is always pushed when git operations are enabled.
 
 ## Inputs
 
