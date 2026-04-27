@@ -23,6 +23,11 @@ describe('should-be-latest', () => {
       expect(result).toBe(false);
     });
 
+    test('returns false for pre-release versions (alpha)', () => {
+      const result = shouldBeLatest('package-name', '2.22.0-alpha.1');
+      expect(result).toBe(false);
+    });
+
     test('returns false for nightly versions', () => {
       const result = shouldBeLatest('package-name', '2.23.0-nightly-20260129-abc123def');
       expect(result).toBe(false);

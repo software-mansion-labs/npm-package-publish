@@ -65,7 +65,11 @@ function getVersion(packageName, releaseType, versionHint = null) {
 
     const nightlyVersion = `${versionToUse}-nightly-${currentDate}-${currentSHA}`;
     return nightlyVersion;
-  } else if (releaseType === ReleaseType.BETA || releaseType === ReleaseType.RELEASE_CANDIDATE) {
+  } else if (
+    releaseType === ReleaseType.BETA ||
+    releaseType === ReleaseType.ALPHA ||
+    releaseType === ReleaseType.RELEASE_CANDIDATE
+  ) {
     let versionToUse = versionHint;
 
     if (!versionToUse) {

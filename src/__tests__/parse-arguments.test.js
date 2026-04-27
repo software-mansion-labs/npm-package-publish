@@ -95,6 +95,26 @@ describe('parse-arguments', () => {
       });
     });
 
+    test('returns alpha release type with --alpha flag', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--package-name',
+        'test-package',
+        '--package-json-path',
+        './package.json',
+      ];
+      const result = parseArguments();
+      expect(result).toEqual({
+        releaseType: ReleaseType.ALPHA,
+        version: null,
+        versionHint: null,
+        packageName: 'test-package',
+        packageJsonPath: './package.json',
+      });
+    });
+
     test('returns rc release type with --rc flag', () => {
       process.argv = [
         'node',
@@ -131,6 +151,28 @@ describe('parse-arguments', () => {
       const result = parseArguments();
       expect(result).toEqual({
         releaseType: ReleaseType.BETA,
+        version: null,
+        versionHint: '2.22.0',
+        packageName: 'test-package',
+        packageJsonPath: './package.json',
+      });
+    });
+
+    test('returns alpha with version-hint when both provided', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--version-hint',
+        '2.22.0',
+        '--package-name',
+        'test-package',
+        '--package-json-path',
+        './package.json',
+      ];
+      const result = parseArguments();
+      expect(result).toEqual({
+        releaseType: ReleaseType.ALPHA,
         version: null,
         versionHint: '2.22.0',
         packageName: 'test-package',
@@ -186,21 +228,21 @@ describe('parse-arguments', () => {
     test('throws error when --nightly and --beta are both provided', () => {
       process.argv = ['node', 'script.js', '--nightly', '--beta', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow(
-        'Release flags --nightly, --beta, and --rc are mutually exclusive',
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
       );
     });
 
     test('throws error when --nightly and --rc are both provided', () => {
       process.argv = ['node', 'script.js', '--nightly', '--rc', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow(
-        'Release flags --nightly, --beta, and --rc are mutually exclusive',
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
       );
     });
 
     test('throws error when --beta and --rc are both provided', () => {
       process.argv = ['node', 'script.js', '--beta', '--rc', '--package-name', 'package-name'];
       expect(() => parseArguments()).toThrow(
-        'Release flags --nightly, --beta, and --rc are mutually exclusive',
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
       );
     });
 
@@ -215,7 +257,51 @@ describe('parse-arguments', () => {
         'package-name',
       ];
       expect(() => parseArguments()).toThrow(
-        'Release flags --nightly, --beta, and --rc are mutually exclusive',
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
+      );
+    });
+
+    test('throws error when --alpha and --beta are both provided', () => {
+      process.argv = ['node', 'script.js', '--alpha', '--beta', '--package-name', 'package-name'];
+      expect(() => parseArguments()).toThrow(
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
+      );
+    });
+
+    test('throws error when --alpha and --rc are both provided', () => {
+      process.argv = ['node', 'script.js', '--alpha', '--rc', '--package-name', 'package-name'];
+      expect(() => parseArguments()).toThrow(
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
+      );
+    });
+
+    test('throws error when --alpha and --nightly are both provided', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--nightly',
+        '--package-name',
+        'package-name',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
+      );
+    });
+
+    test('throws error when all four flags are provided', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--nightly',
+        '--beta',
+        '--alpha',
+        '--rc',
+        '--package-name',
+        'package-name',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive',
       );
     });
 
@@ -337,6 +423,22 @@ describe('parse-arguments', () => {
       ];
       expect(() => parseArguments()).toThrow(
         'Version "2.22.0-nightly.1" is not valid for release type "stable"',
+      );
+    });
+
+    test('throws error for stable release type but version format is alpha', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--version',
+        '2.22.0-alpha.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-alpha.1" is not valid for release type "stable"',
       );
     });
 
@@ -511,6 +613,143 @@ describe('parse-arguments', () => {
       ];
       expect(() => parseArguments()).toThrow(
         'Version "2.22.0-nightly.1" is not valid for release type "rc"',
+      );
+    });
+
+    // Alpha release type version validation
+    test('accepts alpha version for alpha release type', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--version',
+        '2.22.0-alpha.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      const result = parseArguments();
+      expect(result.version).toBe('2.22.0-alpha.1');
+      expect(result.releaseType).toBe(ReleaseType.ALPHA);
+    });
+
+    test('throws error for alpha release type but version format is stable', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--version',
+        '2.22.0',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0" is not valid for release type "alpha"',
+      );
+    });
+
+    test('throws error for alpha release type but version format is beta', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--version',
+        '2.22.0-beta.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-beta.1" is not valid for release type "alpha"',
+      );
+    });
+
+    test('throws error for alpha release type but version format is rc', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--version',
+        '2.22.0-rc.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-rc.1" is not valid for release type "alpha"',
+      );
+    });
+
+    test('throws error for alpha release type but version format is nightly', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--alpha',
+        '--version',
+        '2.22.0-nightly.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-nightly.1" is not valid for release type "alpha"',
+      );
+    });
+
+    test('throws error for beta release type but version format is alpha', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--beta',
+        '--version',
+        '2.22.0-alpha.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-alpha.1" is not valid for release type "beta"',
+      );
+    });
+
+    test('throws error for nightly release type but version format is alpha', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--nightly',
+        '--version',
+        '2.22.0-alpha.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-alpha.1" is not valid for release type "nightly"',
+      );
+    });
+
+    test('throws error for rc release type but version format is alpha', () => {
+      process.argv = [
+        'node',
+        'script.js',
+        '--rc',
+        '--version',
+        '2.22.0-alpha.1',
+        '--package-name',
+        'package-name',
+        '--package-json-path',
+        './package.json',
+      ];
+      expect(() => parseArguments()).toThrow(
+        'Version "2.22.0-alpha.1" is not valid for release type "rc"',
       );
     });
 
@@ -728,6 +967,7 @@ describe('parse-arguments', () => {
     test('has correct values', () => {
       expect(ReleaseType.STABLE).toBe('stable');
       expect(ReleaseType.BETA).toBe('beta');
+      expect(ReleaseType.ALPHA).toBe('alpha');
       expect(ReleaseType.RELEASE_CANDIDATE).toBe('rc');
       expect(ReleaseType.NIGHTLY).toBe('nightly');
     });

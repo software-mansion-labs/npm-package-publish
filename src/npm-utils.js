@@ -82,8 +82,8 @@ function getNextPatchVersion(packageName, major, minor) {
 }
 
 function getNextPreReleaseIndex(packageName, baseVersion, releaseType) {
-  if (releaseType !== 'beta' && releaseType !== 'rc') {
-    throw new Error(`Invalid pre-release type: ${releaseType}. Must be "beta" or "rc".`);
+  if (releaseType !== 'beta' && releaseType !== 'alpha' && releaseType !== 'rc') {
+    throw new Error(`Invalid pre-release type: ${releaseType}. Must be "beta", "alpha", or "rc".`);
   }
 
   const range = `>=${baseVersion}-${releaseType}.0 <${baseVersion}`;

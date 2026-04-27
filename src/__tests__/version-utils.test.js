@@ -50,6 +50,11 @@ describe('version-utils', () => {
       expect(result).toEqual([2, 22, 0, '-beta.5']);
     });
 
+    test('parses alpha pre-release version', () => {
+      const result = parseVersion('2.22.0-alpha.3');
+      expect(result).toEqual([2, 22, 0, '-alpha.3']);
+    });
+
     test('parses nightly pre-release version', () => {
       const result = parseVersion('2.23.0-nightly-20260129-abc123def');
       expect(result).toEqual([2, 23, 0, '-nightly-20260129-abc123def']);
@@ -173,6 +178,13 @@ describe('version-utils', () => {
       const result = getNextPreReleaseVersion('package-name', 'beta', '2.22.0');
       expect(result).toBe('2.22.0-beta.3');
       expect(getNextPreReleaseIndex).toHaveBeenCalledWith('package-name', '2.22.0', 'beta');
+    });
+
+    test('returns formatted version string for alpha release type', () => {
+      getNextPreReleaseIndex.mockReturnValue(2);
+      const result = getNextPreReleaseVersion('package-name', 'alpha', '2.22.0');
+      expect(result).toBe('2.22.0-alpha.2');
+      expect(getNextPreReleaseIndex).toHaveBeenCalledWith('package-name', '2.22.0', 'alpha');
     });
 
     test('passes package name through to getNextPreReleaseIndex', () => {

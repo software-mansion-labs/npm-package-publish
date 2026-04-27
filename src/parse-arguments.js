@@ -3,6 +3,7 @@ const assert = require('assert');
 const ReleaseType = {
   STABLE: 'stable',
   BETA: 'beta',
+  ALPHA: 'alpha',
   RELEASE_CANDIDATE: 'rc',
   NIGHTLY: 'nightly',
 };
@@ -14,6 +15,7 @@ function parseArguments() {
   let versionHint = null;
   let isNightly = false;
   let isBeta = false;
+  let isAlpha = false;
   let isReleaseCandidate = false;
   let packageName = null;
   let packageJsonPath = null;
@@ -24,6 +26,8 @@ function parseArguments() {
       isNightly = true;
     } else if (arg === '--beta') {
       isBeta = true;
+    } else if (arg === '--alpha') {
+      isAlpha = true;
     } else if (arg === '--rc') {
       isReleaseCandidate = true;
     } else if (arg === '--version') {
@@ -60,17 +64,19 @@ function parseArguments() {
   }
 
   assert(
-    [isNightly, isBeta, isReleaseCandidate].filter(Boolean).length <= 1,
-    'Release flags --nightly, --beta, and --rc are mutually exclusive; specify at most one',
+    [isNightly, isBeta, isAlpha, isReleaseCandidate].filter(Boolean).length <= 1,
+    'Release flags --nightly, --beta, --alpha, and --rc are mutually exclusive; specify at most one',
   );
 
   const releaseType = isNightly
     ? ReleaseType.NIGHTLY
     : isBeta
       ? ReleaseType.BETA
-      : isReleaseCandidate
-        ? ReleaseType.RELEASE_CANDIDATE
-        : ReleaseType.STABLE;
+      : isAlpha
+        ? ReleaseType.ALPHA
+        : isReleaseCandidate
+          ? ReleaseType.RELEASE_CANDIDATE
+          : ReleaseType.STABLE;
 
   if (versionHint != null) {
     validateVersionHintFormat(versionHint);
@@ -99,6 +105,8 @@ function validateVersionForReleaseType(version, releaseType) {
     versionRegex = /^(\d+)\.(\d+)\.(\d+)$/;
   } else if (releaseType === ReleaseType.BETA) {
     versionRegex = /^(\d+)\.(\d+)\.(\d+)-beta\.\d+$/;
+  } else if (releaseType === ReleaseType.ALPHA) {
+    versionRegex = /^(\d+)\.(\d+)\.(\d+)-alpha\.\d+$/;
   } else if (releaseType === ReleaseType.RELEASE_CANDIDATE) {
     versionRegex = /^(\d+)\.(\d+)\.(\d+)-rc\.\d+$/;
   } else {

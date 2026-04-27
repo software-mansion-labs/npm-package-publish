@@ -6,7 +6,7 @@ A GitHub composite action that builds and publishes an npm package with automati
 
 1. **Version resolution** — Computes the next version based on the release type:
    - `nightly` — generates a timestamped pre-release version (e.g. `3.0.0-nightly-20260223-abc123def`), either based on the version published as latest (minor + 1), or based on the exact version passed to the action
-   - `beta` / `rc` — generates an incremented pre-release version (e.g. `3.0.0-beta.1`, `3.0.0-rc.2`)
+   - `beta` / `alpha` / `rc` — generates an incremented pre-release version (e.g. `3.0.0-beta.1`, `3.0.0-alpha.2`, `3.0.0-rc.2`)
    - `stable` — uses the stable version inferred from the branch name (assumes `x.y-stable` format for branch name), or a manually provided version
 2. **npm tag resolution** — Automatically assigns the correct dist-tag (`nightly`, `next`, `latest`) based on the release type and whether the version is newer than what is currently tagged `latest` on the registry.
 3. **Validation** — Validates that the version being published is sane relative to what already exists on the registry.
@@ -19,9 +19,9 @@ A GitHub composite action that builds and publishes an npm package with automati
 |---|---|---|---|
 | `package-name` | Yes | — | Name of the package to publish (as it appears on the npm registry). |
 | `package-json-path` | Yes | — | Path to the `package.json` file that should have its `version` field updated. |
-| `release-type` | No | `nightly` | Release type. One of: `stable`, `nightly`, `beta`, `rc`. |
+| `release-type` | No | `nightly` | Release type. One of: `stable`, `nightly`, `beta`, `alpha`, `rc`. |
 | `version` | No | - | Explicit version to publish in `x.y.z` format. Typically inferred from branch name for stable releases; not applicable for nightly. |
-| `version-getter-script` | No | - | Path to a custom script that determines the version to publish. When provided, the action runs this script instead of the built-in version resolution logic. It receives `--package-name <package-name>`, `--package-json-path <package-json-path>`, `--version <version>` and release type (`--nightly`, `--beta`, `--rc`) as parameters and should print to STDOUT the resolved version value. |
+| `version-getter-script` | No | - | Path to a custom script that determines the version to publish. When provided, the action runs this script instead of the built-in version resolution logic. It receives `--package-name <package-name>`, `--package-json-path <package-json-path>`, `--version <version>` and release type (`--nightly`, `--beta`, `--alpha`, `--rc`) as parameters and should print to STDOUT the resolved version value. |
 | `npm-tag` | No | - | Explicit npm dist-tag to publish under. When provided, skips automatic tag resolution entirely. |
 | `perform-git-operations` | No | `true` | Whether to create and push a release commit + tag for this run. Applies to every release type — set per call to decide which releases (e.g. stable only, or stable + rc) leave a commit and tag behind. |
 | `dry-run` | No | `true` | When `true`, runs `npm publish --dry-run` and skips `git push`. Set to `false` for a real release. |
@@ -67,7 +67,7 @@ on:
       release-type:
         description: Type of release to publish.
         type: choice
-        options: [stable, nightly, beta, rc]
+        options: [stable, nightly, beta, alpha, rc]
         default: stable
       version:
         description: Explicit version (leave empty to infer automatically).
@@ -93,7 +93,7 @@ on:
       release-type:
         description: Type of release to publish.
         type: choice
-        options: [stable, nightly, beta, rc]
+        options: [stable, nightly, beta, alpha, rc]
         default: stable
       version:
         description: Explicit version (leave empty to infer automatically).
@@ -148,7 +148,7 @@ This works correctly as long as the in-development major version matches the lat
     dry-run: false
 ```
 
-**Beta / RC** — The base version is inferred from the current branch name, which is expected to follow the `x.y-stable` pattern (e.g. `2.31-stable`). The action strips the branch suffix and uses `x.y.0` as the base, then increments the pre-release counter (e.g. `2.31.0-beta.1`, `2.31.0-beta.2`, …). You can also pass an explicit `version` to override this.
+**Beta / Alpha / RC** — The base version is inferred from the current branch name, which is expected to follow the `x.y-stable` pattern (e.g. `2.31-stable`). The action strips the branch suffix and uses `x.y.0` as the base, then increments the pre-release counter (e.g. `2.31.0-beta.1`, `2.31.0-alpha.2`, `2.31.0-rc.1`, …). You can also pass an explicit `version` to override this.
 
 **Stable** — The `major.minor` is read from the branch name in `x.y-stable` format. The patch number is determined automatically by querying the npm registry for all versions published under that `x.y.x` range and incrementing the highest one (e.g. if `2.31.3` is the latest patch, the next stable will be `2.31.4`). If no versions exist yet for that range, patch starts at `0`. Stable releases are intended to be cut from a dedicated release branch, not from `main`. You can pass an explicit `version` to override the entire resolved version. Note: when run on `main`, the release commit is skipped (the git tag is still pushed if `perform-git-operations` is `true`).
 
@@ -165,7 +165,7 @@ on:
       release-type:
         description: Type of release to publish.
         type: choice
-        options: [stable, nightly, beta, rc]
+        options: [stable, nightly, beta, alpha, rc]
         default: stable
       version:
         description: Explicit version in x.y.z format (leave empty to infer).
@@ -228,5 +228,5 @@ The action automatically selects the appropriate npm dist-tag:
 | Release type | Condition | Tag applied |
 |---|---|---|
 | `nightly` | always | `nightly` |
-| `beta` or `rc` | always | `next` |
+| `beta`, `alpha`, or `rc` | always | `next` |
 | `stable` | version is newer than current `latest` | `latest` |
